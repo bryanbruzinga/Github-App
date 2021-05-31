@@ -1,67 +1,71 @@
 import axios from "axios";
 import React from "react";
+import styles from "../styles/Home.module.css";
+import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   const [dados, setDados] = React.useState(null);
   const [input, setInput] = React.useState("");
-  const [tagMenu, setTagMenu] = React.useState(false);
-  const [tagValue, setTagValue] = React.useState("");
+  const [error, setError] = React.useState("");
 
   async function puxarDados(user) {
-    const response = await axios.get(
-      `http://api.github.com/users/${user}/starred`
-    );
-    setDados(response.data);
+    try {
+      const response = await axios.get(
+        `http://api.github.com/users/${user}/starred`
+      );
+      setDados(response.data);
+    } catch (error) {
+      if (error.response.status === 404) {
+        console.log(error);
+        setError("Repositório inexistente");
+      }
+    }
   }
 
   function updateValue(e) {
     setInput(e.target.value);
   }
 
-  function toggleTagMenu() {
-    setTagMenu(!tagMenu);
-  }
-
-  function handleTagValue(e) {
-    setTagValue(e.target.value);
-  }
-
-  function updateTag(value) {
-    console.log(value);
-  }
-
   return (
-    <div>
-      <label>Digite o usuário do Github</label>
-      <input type="text" name="user" onChange={(e) => updateValue(e)} />
-      <button onClick={() => puxarDados(input)}>Buscar stars</button>
-
-      {dados?.tag}
-      {dados &&
-        dados.map((item) => (
-          <div key={item.id}>
-            <p>Id: {item.id}</p>
-            <p>Nome: {item.name}</p>
-            <p>Descrição: {item.description}</p>
-            <p>URL: {item.html_url}</p>
-            <div>
-              <button onClick={toggleTagMenu}>Criar Tag</button>
-              <button>Editar Tag</button>
-              <button>Excluir Tag</button>
-              {tagMenu && (
-                <div>
-                  <label>Digite a tag:</label>
-                  <input
-                    type="text"
-                    name="tag"
-                    onChange={(e) => handleTagValue(e)}
-                  />
-                  <button onClick={() => updateTag(tagValue)}>Ok</button>
-                </div>
-              )}
+    <div className={styles.repoContainer}>
+      <div className={styles.repoSearch}>
+        <label htmlFor="user">Digite o usuário do Github</label>
+        <input
+          type="text"
+          name="user"
+          id="user"
+          onChange={(e) => updateValue(e)}
+        />
+        <button onClick={() => puxarDados(input)}>
+          Buscar repositórios marcados com estrela
+        </button>
+      </div>
+      {dados ? (
+        <div className={styles.repoData}>
+          {dados.map((item) => (
+            <div key={item.id} className={styles.repoCard}>
+              <div>
+                <p>Id: {item.id}</p>
+                <p>Nome: {item.name}</p>
+              </div>
+              <p>Descrição: {item.description}</p>
+              <p>
+                URL:
+                <Link href={item.html_url}>
+                  <a target="__blank"> {item.html_url}</a>
+                </Link>
+              </p>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      ) : (
+        <div className={styles.repoDataEmpty}>
+          <p>Busque por repositórios marcados com estrela pelo usuário.</p>
+          <Image src="/github.png" alt="github" width={700} height={400} />
+          {error && <span>{error}</span>}
+        </div>
+      )}
     </div>
   );
 }
